@@ -162,9 +162,12 @@ export type Database = {
           discrepancies: Json | null
           document_id: string
           due_at: string | null
+          email_markdown: string | null
           id: string
           policy_id: string | null
           reference: string
+          reviewed_at: string | null
+          reviewed_by: string | null
           reviewer_notes: string | null
           severity: string | null
           status: string
@@ -177,9 +180,12 @@ export type Database = {
           discrepancies?: Json | null
           document_id: string
           due_at?: string | null
+          email_markdown?: string | null
           id?: string
           policy_id?: string | null
           reference: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           reviewer_notes?: string | null
           severity?: string | null
           status?: string
@@ -192,9 +198,12 @@ export type Database = {
           discrepancies?: Json | null
           document_id?: string
           due_at?: string | null
+          email_markdown?: string | null
           id?: string
           policy_id?: string | null
           reference?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           reviewer_notes?: string | null
           severity?: string | null
           status?: string
