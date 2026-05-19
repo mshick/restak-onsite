@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import type {
   Discrepancy,
   ExtractedDocument,
@@ -8,18 +7,15 @@ import type {
   UnparsedSection,
 } from '@/lib/reconcile';
 import { type AccountRow, buildSor, type PolicyRow } from '@/lib/sor';
+import { buildEmailInput } from '@/lib/email/build-input';
+import { renderTemplate } from '@/lib/email';
 import { createClient } from '@/lib/supabase/server';
 import { RunReconcileButton } from './run-reconcile-button';
+import { DiscrepancyCards } from './discrepancy-cards';
+import { EmailPanel } from './email-panel';
+import { SubmitFooter } from './submit-footer';
 
 export const dynamic = 'force-dynamic';
-
-const TIER_TONE: Record<string, string> = {
-  out_of_distribution: 'border-red-300 bg-red-50',
-  material: 'border-amber-300 bg-amber-50',
-  ambiguous: 'border-violet-300 bg-violet-50',
-  auto_resolved: 'border-emerald-300 bg-emerald-50',
-  cosmetic: 'border-slate-200 bg-slate-50',
-};
 
 interface DetailPolicy extends PolicyRow {
   account: AccountRow | AccountRow[];
@@ -34,6 +30,7 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
     .select(
       `
       id, reference, status, severity, due_at, discrepancies,
+      email_markdown, reviewer_notes,
       document:documents!inner ( id, filename, doc_type, extracted, extracted_at, extractor ),
       policy:policies!inner (
         policy_number, carrier, policy_type, status,
@@ -69,8 +66,18 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
   const discrepancies = (item.discrepancies ?? []) as unknown as Discrepancy[];
 
   const fieldNames = [...new Set([...Object.keys(sor), ...Object.keys(ext.fields ?? {})])];
-  const narrativeFindings = discrepancies.filter((d) => d.kind === 'narrative');
-  const fieldFindings = discrepancies.filter((d) => d.kind === 'field');
+
+  const templatePreview = renderTemplate(
+    buildEmailInput({
+      policy,
+      account,
+      document: doc,
+      discrepancies,
+      reviewer_notes: item.reviewer_notes,
+    }),
+  );
+
+  const includedCount = discrepancies.filter((d) => d.flag_state === 'include').length;
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
@@ -148,36 +155,22 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
         </section>
       )}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">
-          Field findings{' '}
-          <span className="text-xs font-normal text-muted-foreground">
-            ({fieldFindings.length})
-          </span>
-        </h2>
-        {discrepancies.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Not yet compared. Click <strong>Run reconcile</strong> to populate.
-          </p>
-        )}
-        {fieldFindings.map((d) => (
-          <FieldFindingCard key={d.id} d={d} />
-        ))}
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_360px]">
+        <DiscrepancyCards itemId={item.id} discrepancies={discrepancies} />
+        <EmailPanel
+          itemId={item.id}
+          initialMarkdown={item.email_markdown}
+          discrepancies={discrepancies}
+          templatePreview={templatePreview}
+        />
       </section>
 
-      {narrativeFindings.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">
-            Narrative findings{' '}
-            <span className="text-xs font-normal text-muted-foreground">
-              ({narrativeFindings.length}) — LLM-only
-            </span>
-          </h2>
-          {narrativeFindings.map((d) => (
-            <NarrativeFindingCard key={d.id} d={d} />
-          ))}
-        </section>
-      )}
+      <SubmitFooter
+        itemId={item.id}
+        totalDiscrepancies={discrepancies.length}
+        includedCount={includedCount}
+        hasReconciled={discrepancies.length > 0}
+      />
     </main>
   );
 }
@@ -249,77 +242,6 @@ function UnparsedRow({ section }: { section: UnparsedSection }) {
         {section.text}
       </pre>
     </details>
-  );
-}
-
-function FieldFindingCard({ d }: { d: Discrepancy & { kind: 'field' } }) {
-  return (
-    <article className={`rounded-md border p-3 ${TIER_TONE[d.tier] ?? ''}`}>
-      <header className="flex items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-sm">{d.field}</span>
-          <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs">{d.tier}</span>
-          <span className="text-xs text-muted-foreground">
-            via {d.source}
-            {typeof d.confidence === 'number' && ` · ${Math.round(d.confidence * 100)}%`}
-            {typeof d.evidence?.extraction_confidence === 'number' &&
-              ` · extracted @ ${Math.round(d.evidence.extraction_confidence * 100)}%`}
-          </span>
-        </div>
-        <div className="flex gap-1">
-          <Button size="sm" variant="ghost" disabled>
-            Accept
-          </Button>
-          <Button size="sm" variant="ghost" disabled>
-            Reject
-          </Button>
-          <Button size="sm" variant="ghost" disabled>
-            Escalate
-          </Button>
-        </div>
-      </header>
-      <p className="mt-1 text-sm">{d.summary}</p>
-      {d.detail && <p className="mt-1 text-xs text-muted-foreground">{d.detail}</p>}
-      <div className="mt-2 grid grid-cols-2 gap-3 text-xs">
-        <div>
-          <span className="text-muted-foreground">SOR:</span> {formatValue(d.system_value)}
-        </div>
-        <div>
-          <span className="text-muted-foreground">Extracted:</span> {formatValue(d.extracted_value)}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function NarrativeFindingCard({ d }: { d: Discrepancy & { kind: 'narrative' } }) {
-  return (
-    <article className={`rounded-md border p-3 ${TIER_TONE[d.tier] ?? ''}`}>
-      <header className="flex items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs uppercase">{d.section}</span>
-          <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs">{d.tier}</span>
-          <span className="text-xs text-muted-foreground">
-            narrative · via llm
-            {typeof d.page === 'number' && ` · p${d.page}`}
-            {typeof d.confidence === 'number' && ` · ${Math.round(d.confidence * 100)}%`}
-          </span>
-        </div>
-        <div className="flex gap-1">
-          <Button size="sm" variant="ghost" disabled>
-            Accept
-          </Button>
-          <Button size="sm" variant="ghost" disabled>
-            Escalate
-          </Button>
-        </div>
-      </header>
-      <p className="mt-1 text-sm font-medium">{d.summary}</p>
-      {d.detail && <p className="mt-1 text-xs text-muted-foreground">{d.detail}</p>}
-      <blockquote className="mt-2 border-l-2 border-current pl-2 text-xs italic">
-        &ldquo;{d.excerpt}&rdquo;
-      </blockquote>
-    </article>
   );
 }
 
