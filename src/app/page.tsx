@@ -58,10 +58,7 @@ export default async function Home() {
   const pending = sorted.filter((i) => i.status !== 'reviewed');
   const reviewed = sorted.filter((i) => i.status === 'reviewed');
 
-  function renderRow(
-    item: (typeof sorted)[number],
-    opts: { muted?: boolean } = {},
-  ) {
+  function renderRow(item: (typeof sorted)[number], opts: { muted?: boolean } = {}) {
     // PostgREST's typed joins come back as arrays in the supabase-js
     // generated types even when the FK is single-row; unwrap defensively.
     const doc = Array.isArray(item.document) ? item.document[0] : item.document;
@@ -72,9 +69,7 @@ export default async function Home() {
         : policy.account
       : null;
 
-    const discrepancyCount = Array.isArray(item.discrepancies)
-      ? item.discrepancies.length
-      : null;
+    const discrepancyCount = Array.isArray(item.discrepancies) ? item.discrepancies.length : null;
 
     const isReviewed = item.status === 'reviewed';
     const duration =
@@ -98,9 +93,7 @@ export default async function Home() {
           </div>
           <span className="text-sm">
             {account?.account_name ?? 'Unknown account'}
-            {policy?.carrier && (
-              <span className="text-muted-foreground"> · {policy.carrier}</span>
-            )}
+            {policy?.carrier && <span className="text-muted-foreground"> · {policy.carrier}</span>}
             {policy?.policy_number && (
               <span className="font-mono text-xs text-muted-foreground">
                 {' · '}
@@ -144,7 +137,7 @@ export default async function Home() {
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
       <header className="flex items-baseline justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Reconciliation queue</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Document queue</h1>
           <p className="text-sm text-muted-foreground">
             System of record vs. extracted document — flag what needs a human.
           </p>
