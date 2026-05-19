@@ -1,0 +1,100 @@
+{
+  "planPath": "docs/superpowers/plans/2026-05-19-reconciliation-review-flow.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: Schema migration — reviewed columns + extended status",
+      "status": "pending",
+      "description": "**Goal:** Add reviewed_at, reviewed_by, email_markdown columns to reconciliation_items and widen status check to include 'reviewed'. Regenerate Supabase types.\n\n```json:metadata\n{\"files\":[\"supabase/migrations/20260520000000_review_flow.sql\",\"src/lib/db/database.types.ts\"],\"verifyCommand\":\"pnpm db:reset && pnpm db:types && pnpm check\",\"acceptanceCriteria\":[\"Migration applies cleanly\",\"status check includes 'reviewed'\",\"Generated types reflect new columns\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Extend Discrepancy + DecisionLogEntry types",
+      "status": "pending",
+      "description": "**Goal:** Add suggested_rationale, final_rationale, flag_state to DiscrepancyBase; extend DecisionLogEntry.action union.\n\n```json:metadata\n{\"files\":[\"src/lib/reconcile/types.ts\"],\"verifyCommand\":\"pnpm check\",\"acceptanceCriteria\":[\"DiscrepancyBase has 3 new fields\",\"action union extended\",\"existing actions retained\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Templated rationales + flag defaults in rules pre-pass",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "**Goal:** rules.ts uses withReviewDefaults helper so every rule-emitted finding carries templated suggested_rationale, final_rationale, and flag_state='exclude'.\n\n```json:metadata\n{\"files\":[\"src/lib/reconcile/rules.ts\"],\"verifyCommand\":\"pnpm check && pnpm lint\",\"acceptanceCriteria\":[\"all rule findings have 3 new fields\",\"cosmetic template\",\"auto_resolved template\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: LLM seam — elicit suggested_rationale",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "**Goal:** Prompt + zod schema in src/lib/reconcile/ emit a carrier-facing suggested_rationale per finding. Fallback stub emits a rationale string but leaves final_rationale/flag_state for Task 5.\n\n```json:metadata\n{\"files\":[\"src/lib/reconcile/prompts.ts\",\"src/lib/reconcile/llm.ts\"],\"verifyCommand\":\"pnpm check\",\"acceptanceCriteria\":[\"prompt rule 6 added\",\"zod requires suggested_rationale\",\"fallback emits rationale\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Reconcile post-process — flag + rationale defaults",
+      "status": "pending",
+      "blockedBy": [3, 4],
+      "description": "**Goal:** index.ts runs every finding through withDefaults(d): flag_state per tier, final_rationale = suggested_rationale, stable id.\n\n```json:metadata\n{\"files\":[\"src/lib/reconcile/index.ts\"],\"verifyCommand\":\"pnpm check && pnpm build\",\"acceptanceCriteria\":[\"flag_state per tier\",\"final_rationale populated\",\"stable id\",\"e2e reconcile writes all 3\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 6: Email module — types + deterministic template",
+      "status": "pending",
+      "description": "**Goal:** Create src/lib/email/types.ts and src/lib/email/template.ts (renderTemplate(input): string).\n\n```json:metadata\n{\"files\":[\"src/lib/email/types.ts\",\"src/lib/email/template.ts\"],\"verifyCommand\":\"pnpm check && pnpm lint\",\"acceptanceCriteria\":[\"types exported\",\"renderTemplate returns full markdown\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 7: Email module — LLM draft path + public surface",
+      "status": "pending",
+      "blockedBy": [6],
+      "description": "**Goal:** draftEmail(input) calls gpt-5.4-mini with polisher-not-judge prompt; falls back to renderTemplate on missing key/error. src/lib/email/index.ts exports public surface.\n\n```json:metadata\n{\"files\":[\"src/lib/email/prompts.ts\",\"src/lib/email/draft.ts\",\"src/lib/email/index.ts\"],\"verifyCommand\":\"pnpm check && pnpm build\",\"acceptanceCriteria\":[\"LLM path returns llm-sourced markdown\",\"fallback works\",\"public exports correct\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 8: Server actions for the review flow",
+      "status": "pending",
+      "blockedBy": [1, 5, 7],
+      "description": "**Goal:** toggleFlag, editRationale, generateEmail, submitReview in src/app/items/[id]/actions.ts; buildEmailInput in src/lib/email/build-input.ts.\n\n```json:metadata\n{\"files\":[\"src/app/items/[id]/actions.ts\",\"src/lib/email/build-input.ts\"],\"verifyCommand\":\"pnpm check && pnpm build\",\"acceptanceCriteria\":[\"4 server actions\",\"decision_log appended\",\"email_markdown invalidated on changes\",\"submitReview persists+redirects\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 9: Queue screen — FIFO, status badge, time-to-completion",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "**Goal:** / sorts by created_at FIFO, splits pending vs reviewed groups, Reviewed badge + time-to-completion + Copy email button.\n\n```json:metadata\n{\"files\":[\"src/app/page.tsx\",\"src/app/queue-row-actions.tsx\"],\"verifyCommand\":\"pnpm build\",\"acceptanceCriteria\":[\"FIFO sort\",\"reviewed muted\",\"new status labels\",\"time-to-completion\",\"copy-email works\"]}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "Task 10: Review page — extract subcomponents",
+      "status": "pending",
+      "blockedBy": [5],
+      "description": "**Goal:** Pure refactor — extract discrepancy-cards.tsx, email-panel.tsx (stub showing template preview), submit-footer.tsx (stub disabled button). No behavior change.\n\n```json:metadata\n{\"files\":[\"src/app/items/[id]/page.tsx\",\"src/app/items/[id]/discrepancy-cards.tsx\",\"src/app/items/[id]/email-panel.tsx\",\"src/app/items/[id]/submit-footer.tsx\"],\"verifyCommand\":\"pnpm build\",\"acceptanceCriteria\":[\"existing UI intact\",\"panel placeholder shows template\",\"disabled footer visible\"]}\n```"
+    },
+    {
+      "id": 11,
+      "subject": "Task 11: Discrepancy cards — include toggle + rationale + sections",
+      "status": "pending",
+      "blockedBy": [8, 10],
+      "description": "**Goal:** Replace accept/reject/escalate buttons with Include checkbox + rationale textarea. Group into Needs review (expanded) + Handled automatically (collapsed) sections. Debounced editRationale (500ms).\n\n```json:metadata\n{\"files\":[\"src/app/items/[id]/discrepancy-cards.tsx\"],\"verifyCommand\":\"pnpm build\",\"acceptanceCriteria\":[\"two grouped sections\",\"Include+rationale per card\",\"toggleFlag on change\",\"editRationale debounced\"]}\n```"
+    },
+    {
+      "id": 12,
+      "subject": "Task 12: Email panel — template preview, generate, edit",
+      "status": "pending",
+      "blockedBy": [8, 10],
+      "description": "**Goal:** Email panel with template preview default, Generate button (calls generateEmail), Edit/Preview toggle, Copy button. Add ReviewShell client wrapper owning currentMarkdown state. Surfaces 'template fallback' badge.\n\n```json:metadata\n{\"files\":[\"src/app/items/[id]/email-panel.tsx\",\"src/app/items/[id]/review-shell.tsx\",\"src/app/items/[id]/page.tsx\",\"src/app/items/[id]/submit-footer.tsx\"],\"verifyCommand\":\"pnpm build\",\"acceptanceCriteria\":[\"template default\",\"Generate works\",\"Edit toggle\",\"Copy works\",\"fallback badge\"]}\n```"
+    },
+    {
+      "id": 13,
+      "subject": "Task 13: Submit footer — finalize + redirect",
+      "status": "pending",
+      "blockedBy": [8, 10, 12],
+      "description": "**Goal:** Submit & mark reviewed enabled when reconcile has run; submitReview(itemId, currentMarkdown) in a transition; redirect to /.\n\n```json:metadata\n{\"files\":[\"src/app/items/[id]/submit-footer.tsx\"],\"verifyCommand\":\"pnpm build\",\"acceptanceCriteria\":[\"button enabled when reconciled\",\"submitReview with current markdown\",\"loading label\",\"e2e works\"]}\n```"
+    },
+    {
+      "id": 14,
+      "subject": "Task 14: Update CLAUDE.md to reflect current schema",
+      "status": "pending",
+      "description": "**Goal:** Replace 'one denormalized table' content with 4-table description; link new spec from 'Read this first'.\n\n```json:metadata\n{\"files\":[\"CLAUDE.md\"],\"verifyCommand\":\"\",\"acceptanceCriteria\":[\"data model section describes 4 tables\",\"stack bullet replaced\",\"spec linked\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-19T00:00:00Z"
+}
