@@ -12,8 +12,7 @@ import { renderTemplate } from '@/lib/email';
 import { createClient } from '@/lib/supabase/server';
 import { RunReconcileButton } from './run-reconcile-button';
 import { DiscrepancyCards } from './discrepancy-cards';
-import { EmailPanel } from './email-panel';
-import { SubmitFooter } from './submit-footer';
+import { ReviewShell } from './review-shell';
 
 export const dynamic = 'force-dynamic';
 
@@ -155,22 +154,16 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
         </section>
       )}
 
-      <section className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_360px]">
-        <DiscrepancyCards itemId={item.id} discrepancies={discrepancies} />
-        <EmailPanel
-          itemId={item.id}
-          initialMarkdown={item.email_markdown}
-          discrepancies={discrepancies}
-          templatePreview={templatePreview}
-        />
-      </section>
-
-      <SubmitFooter
+      <ReviewShell
         itemId={item.id}
+        initialMarkdown={item.email_markdown}
+        templatePreview={templatePreview}
         totalDiscrepancies={discrepancies.length}
         includedCount={includedCount}
         hasReconciled={discrepancies.length > 0}
-      />
+      >
+        <DiscrepancyCards itemId={item.id} discrepancies={discrepancies} />
+      </ReviewShell>
     </main>
   );
 }

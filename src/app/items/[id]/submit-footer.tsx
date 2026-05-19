@@ -7,6 +7,7 @@ export interface SubmitFooterProps {
   totalDiscrepancies: number;
   includedCount: number;
   hasReconciled: boolean;
+  currentMarkdown?: string;
 }
 
 export function SubmitFooter({
