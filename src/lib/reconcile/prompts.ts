@@ -59,7 +59,18 @@ Rules:
        - effective-date / policy-term shifts
        - assignment / subrogation / waiver changes
   4. Quote excerpts verbatim. Do not paraphrase.
-  5. Return JSON ONLY, matching the requested schema.`;
+  5. Return JSON ONLY, matching the requested schema.
+  6. For every finding (in either array), include a "suggested_rationale":
+     a one-or-two-sentence string written as if drafting a note to the
+     carrier's underwriter — neutral, factual, asks for clarification or
+     correction rather than asserts fault. Examples:
+       - "The policy number on the renewal differs from the placement on
+         file; please confirm the correct value."
+       - "An additional exclusion appears in the cover letter that is not
+         in the structured schedule; please clarify whether it is intended
+         to apply."
+     Do not propose a course of action. Do not include greetings, sign-offs,
+     or list markers — just the sentence(s).`;
 
 interface ResiduePair {
   field: string;

@@ -60,6 +60,7 @@ const fieldFinding = z.object({
   summary: z.string(),
   detail: z.string().nullable(),
   confidence: z.number().min(0).max(1).nullable(),
+  suggested_rationale: z.string(),
 });
 
 const narrativeFinding = z.object({
@@ -70,6 +71,7 @@ const narrativeFinding = z.object({
   page: z.number().int().nullable(),
   detail: z.string().nullable(),
   confidence: z.number().min(0).max(1).nullable(),
+  suggested_rationale: z.string(),
 });
 
 const responseSchema = z.object({
@@ -117,7 +119,9 @@ export async function compareWithLlm(
     page: f.page ?? undefined,
     source: 'llm',
     confidence: f.confidence ?? undefined,
-  }));
+    suggested_rationale: f.suggested_rationale,
+    // final_rationale and flag_state are set by the post-process in index.ts
+  })) as Discrepancy[];
 
   const fieldFindings: Discrepancy[] = residueFields.map((field) => {
     const f = byField.get(field);
@@ -134,6 +138,8 @@ export async function compareWithLlm(
       extracted_value: extField?.value ?? null,
       source: 'llm',
       confidence: f.confidence ?? undefined,
+      suggested_rationale: f.suggested_rationale,
+      // final_rationale and flag_state are set by the post-process in index.ts
       evidence: extField
         ? {
             raw_text: extField.raw_text,
@@ -141,7 +147,7 @@ export async function compareWithLlm(
             extraction_confidence: extField.confidence,
           }
         : undefined,
-    };
+    } as Discrepancy;
   });
 
   return [...fieldFindings, ...narrative];
@@ -164,6 +170,9 @@ function stubField(
     extracted_value: extField?.value ?? null,
     source: 'llm',
     confidence: 0,
+    suggested_rationale:
+      'Extraction confidence was low; please confirm the value on the source document.',
+    // final_rationale and flag_state are set by the post-process in index.ts
     evidence: extField
       ? {
           raw_text: extField.raw_text,
@@ -171,5 +180,5 @@ function stubField(
           extraction_confidence: extField.confidence,
         }
       : undefined,
-  };
+  } as Discrepancy;
 }
