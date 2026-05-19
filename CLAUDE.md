@@ -6,12 +6,14 @@ This repo is for preparing for the **Restak virtual onsite** — a 3-hour workin
 
 `docs/onsite-prep.md` — the full problem framing, likely scenarios, discrepancy taxonomy, and v1 sketch. Read it before suggesting anything; it's the working brief from a prior planning session and the assumptions there should be treated as decided unless I explicitly reopen them.
 
+`docs/superpowers/specs/2026-05-19-reconciliation-review-flow-design.md` — the validated review-flow spec for the v1 build.
+
 ## Stack preferences for the prototype
 
 Personal **Next.js + Supabase + Tailwind + ShadCN** starter. Don't fight it.
 
 - Next.js (app router) for flexibility — route handlers and server actions available if needed, no penalty if the build stays client-side
-- Supabase from the start — one denormalized table, no auth, single mock user. Persistence is worth the small cost (survives HMR reloads, makes the demo land).
+- Supabase from the start — normalized into accounts / policies / documents / reconciliation_items. No auth, single mock user. Persistence is worth the small cost (survives HMR reloads, makes the demo land).
 - Tailwind + ShadCN for styling — perception matters and the starter saves setup time
 - TanStack Query for data flow against the Supabase wrapper
 - pnpm
@@ -61,10 +63,21 @@ supabase/
 
 ## The data model
 
-One denormalized table — `reconciliation_items`. The two payloads being
-compared (`system_of_record`, `extracted`) are both `jsonb`, so the onsite can
-hand us any field shape. Computed comparison output goes back into
-`discrepancies jsonb` on the same row. No joins, no other tables.
+Four tables, normalized:
+
+- `accounts` — the brokerage's clients.
+- `policies` — placed policies; this is the system-of-record row.
+- `documents` — incoming carrier/vendor docs, with the PDF blob and the
+  extracted JSON envelope.
+- `reconciliation_items` — queue rows joining a document to a policy,
+  carrying `discrepancies jsonb` (the comparator's output), `decision_log
+  jsonb` (audit trail), `email_markdown text` (the carrier email), and
+  `reviewed_at / reviewed_by` (status terminal state).
+
+The reconcile pipeline builds the SOR object by joining `policies +
+accounts` via `src/lib/sor.ts` and compares against
+`documents.extracted`. No code in `src/lib/reconcile/` cares about the
+table shape — it sees `SystemOfRecord` and `ExtractedDocument`.
 
 ## The LLM seam
 
