@@ -5,9 +5,9 @@ import type {
   Discrepancy,
   ExtractedDocument,
   ExtractionField,
-  SystemOfRecord,
   UnparsedSection,
 } from '@/lib/reconcile';
+import { type AccountRow, buildSor, type PolicyRow } from '@/lib/sor';
 import { createClient } from '@/lib/supabase/server';
 import { RunReconcileButton } from './run-reconcile-button';
 
@@ -21,20 +21,51 @@ const TIER_TONE: Record<string, string> = {
   cosmetic: 'border-slate-200 bg-slate-50',
 };
 
+interface DetailPolicy extends PolicyRow {
+  account: AccountRow | AccountRow[];
+}
+
 export default async function ItemDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+
   const { data: item } = await supabase
     .from('reconciliation_items')
-    .select('*')
+    .select(
+      `
+      id, reference, status, severity, due_at, discrepancies,
+      document:documents!inner ( id, filename, doc_type, extracted, extracted_at, extractor ),
+      policy:policies!inner (
+        policy_number, carrier, policy_type, status,
+        premium, effective_date, expiration_date, coverage_limit,
+        account:accounts!inner (
+          account_id, account_name,
+          contact_name, contact_email, contact_phone,
+          street, city, state, zip
+        )
+      )
+    `,
+    )
     .eq('id', id)
     .maybeSingle();
 
   if (!item) notFound();
 
-  // jsonb columns come back as `Json`; the writers guarantee the shape.
-  const sor = (item.system_of_record ?? {}) as unknown as SystemOfRecord;
-  const ext = (item.extracted ?? { fields: {} }) as unknown as ExtractedDocument;
+  // supabase-js types nested joins as arrays even when the FK is single-row;
+  // unwrap defensively.
+  const doc = Array.isArray(item.document) ? item.document[0] : item.document;
+  const policy = (Array.isArray(item.policy) ? item.policy[0] : item.policy) as
+    | DetailPolicy
+    | undefined;
+  const account = policy
+    ? Array.isArray(policy.account)
+      ? policy.account[0]
+      : policy.account
+    : undefined;
+  if (!doc || !policy || !account) notFound();
+
+  const ext = (doc?.extracted ?? { fields: {} }) as unknown as ExtractedDocument;
+  const sor = buildSor(policy, account);
   const discrepancies = (item.discrepancies ?? []) as unknown as Discrepancy[];
 
   const fieldNames = [...new Set([...Object.keys(sor), ...Object.keys(ext.fields ?? {})])];
@@ -50,13 +81,33 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
           </Link>
           <h1 className="font-mono text-xl font-semibold">{item.reference}</h1>
           <span className="text-xs uppercase text-muted-foreground">
-            {item.doc_type}
-            {ext.source?.filename ? ` · ${ext.source.filename}` : null}
+            {doc?.doc_type}
+            {doc?.filename ? ` · ${doc.filename}` : null}
             {typeof ext.source?.pages === 'number' ? ` · ${ext.source.pages}p` : null}
           </span>
         </div>
         <RunReconcileButton itemId={item.id} />
       </header>
+
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-3 rounded-md border bg-muted/30 p-3 text-sm">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] uppercase text-muted-foreground">Account</span>
+          <span className="font-medium">{account.account_name}</span>
+          <span className="font-mono text-xs text-muted-foreground">{account.account_id}</span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] uppercase text-muted-foreground">Policy</span>
+          <span className="font-mono">{policy.policy_number}</span>
+          <span className="text-xs text-muted-foreground">{policy.policy_type}</span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] uppercase text-muted-foreground">Carrier</span>
+          <span>{policy.carrier}</span>
+          <span className="text-xs text-muted-foreground">
+            {policy.effective_date} → {policy.expiration_date}
+          </span>
+        </div>
+      </section>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr]">
         <div className="rounded-md border p-3">

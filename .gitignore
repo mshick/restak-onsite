@@ -40,6 +40,10 @@ yarn-error.log*
 
 # isolated agent workspaces
 /.worktrees/
+.claude/
+
+# zip archives of source data — unzipped versions are committed
+docs/*.zip
 
 # vercel
 .vercel

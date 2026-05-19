@@ -15,7 +15,8 @@
       "!**/src/lib/db/database.types.ts",
       "!**/supabase/.branches",
       "!**/supabase/.temp",
-      "!**/pnpm-lock.yaml"
+      "!**/pnpm-lock.yaml",
+      "!**/.claude/worktrees"
     ]
   },
   "formatter": {

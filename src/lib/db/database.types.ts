@@ -9,21 +9,165 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          account_id: string
+          account_name: string
+          city: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          state: string | null
+          street: string | null
+          updated_at: string
+          zip: string | null
+        }
+        Insert: {
+          account_id: string
+          account_name: string
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          state?: string | null
+          street?: string | null
+          updated_at?: string
+          zip?: string | null
+        }
+        Update: {
+          account_id?: string
+          account_name?: string
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          state?: string | null
+          street?: string | null
+          updated_at?: string
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          created_at: string
+          doc_type: string
+          extracted: Json
+          extracted_at: string
+          extractor: string
+          filename: string
+          id: string
+          pdf_blob: string
+          pdf_size_bytes: number
+          policy_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          doc_type: string
+          extracted: Json
+          extracted_at?: string
+          extractor?: string
+          filename: string
+          id?: string
+          pdf_blob: string
+          pdf_size_bytes: number
+          policy_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string
+          extracted?: Json
+          extracted_at?: string
+          extractor?: string
+          filename?: string
+          id?: string
+          pdf_blob?: string
+          pdf_size_bytes?: number
+          policy_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policies: {
+        Row: {
+          account_id: string
+          carrier: string
+          coverage_limit: number | null
+          created_at: string
+          effective_date: string | null
+          expiration_date: string | null
+          id: string
+          policy_number: string
+          policy_type: string
+          premium: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          carrier: string
+          coverage_limit?: number | null
+          created_at?: string
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          policy_number: string
+          policy_type: string
+          premium?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          carrier?: string
+          coverage_limit?: number | null
+          created_at?: string
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          policy_number?: string
+          policy_type?: string
+          premium?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policies_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reconciliation_items: {
         Row: {
           created_at: string
           decided_at: string | null
           decision_log: Json
           discrepancies: Json | null
-          doc_type: string
+          document_id: string
           due_at: string | null
-          extracted: Json
           id: string
+          policy_id: string | null
           reference: string
           reviewer_notes: string | null
           severity: string | null
           status: string
-          system_of_record: Json
           updated_at: string
         }
         Insert: {
@@ -31,15 +175,14 @@ export type Database = {
           decided_at?: string | null
           decision_log?: Json
           discrepancies?: Json | null
-          doc_type: string
+          document_id: string
           due_at?: string | null
-          extracted: Json
           id?: string
+          policy_id?: string | null
           reference: string
           reviewer_notes?: string | null
           severity?: string | null
           status?: string
-          system_of_record: Json
           updated_at?: string
         }
         Update: {
@@ -47,18 +190,32 @@ export type Database = {
           decided_at?: string | null
           decision_log?: Json
           discrepancies?: Json | null
-          doc_type?: string
+          document_id?: string
           due_at?: string | null
-          extracted?: Json
           id?: string
+          policy_id?: string | null
           reference?: string
           reviewer_notes?: string | null
           severity?: string | null
           status?: string
-          system_of_record?: Json
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reconciliation_items_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reconciliation_items_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "policies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

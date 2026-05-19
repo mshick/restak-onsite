@@ -24,7 +24,16 @@ export default async function Home() {
   const supabase = await createClient();
   const { data: items, error } = await supabase
     .from('reconciliation_items')
-    .select('id, reference, doc_type, status, severity, due_at, discrepancies, updated_at')
+    .select(
+      `
+      id, reference, status, severity, due_at, discrepancies, updated_at,
+      document:documents!inner ( doc_type, filename ),
+      policy:policies!inner (
+        policy_number, carrier,
+        account:accounts!inner ( account_name )
+      )
+    `,
+    )
     .order('due_at', { ascending: true, nullsFirst: false });
 
   return (
@@ -56,18 +65,43 @@ export default async function Home() {
           </li>
         )}
         {(items ?? []).map((item) => {
+          // PostgREST's typed joins come back as arrays in the supabase-js
+          // generated types even when the FK is single-row; unwrap defensively.
+          const doc = Array.isArray(item.document) ? item.document[0] : item.document;
+          const policy = Array.isArray(item.policy) ? item.policy[0] : item.policy;
+          const account = policy
+            ? Array.isArray(policy.account)
+              ? policy.account[0]
+              : policy.account
+            : null;
+
           const discrepancyCount = Array.isArray(item.discrepancies)
             ? item.discrepancies.length
             : null;
+
           return (
             <li key={item.id} className="flex flex-wrap items-center gap-4 p-4 hover:bg-muted/30">
               <div className="flex flex-1 flex-col gap-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-sm">{item.reference}</span>
-                  <span className="rounded bg-muted px-1.5 py-0.5 text-xs uppercase text-muted-foreground">
-                    {item.doc_type}
-                  </span>
+                  {doc?.doc_type && (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs uppercase text-muted-foreground">
+                      {doc.doc_type}
+                    </span>
+                  )}
                 </div>
+                <span className="text-sm">
+                  {account?.account_name ?? 'Unknown account'}
+                  {policy?.carrier && (
+                    <span className="text-muted-foreground"> · {policy.carrier}</span>
+                  )}
+                  {policy?.policy_number && (
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {' · '}
+                      {policy.policy_number}
+                    </span>
+                  )}
+                </span>
                 <span className="text-xs text-muted-foreground">
                   {discrepancyCount == null
                     ? 'Not yet compared.'

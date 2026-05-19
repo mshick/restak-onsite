@@ -1,0 +1,9 @@
+policy_number,account_id,carrier,policy_type,status,premium,effective_date,expiration_date,coverage_limit
+CGL-2024-08812,ACC-10042,Hartford Financial Services,Commercial General Liability,active,18750.00,2024-07-01,2025-07-01,2000000.00
+CPP-2024-03341,ACC-10042,Hartford Financial Services,Commercial Property,active,32100.00,2024-07-01,2025-07-01,5000000.00
+BOP-2024-55219,ACC-10078,Travelers Insurance,Business Owners Policy,active,4825.00,2024-03-15,2025-03-15,1000000.00
+WC-2024-71004,ACC-10103,AmTrust Financial,Workers Compensation,active,41200.00,2024-09-01,2025-09-01,
+CGL-2024-71005,ACC-10103,AmTrust Financial,Commercial General Liability,active,15600.00,2024-09-01,2025-09-01,2000000.00
+PL-2024-40082,ACC-10155,CNA Financial,Professional Liability,active,9450.00,2024-11-01,2025-11-01,1000000.00
+BOP-2024-40083,ACC-10155,CNA Financial,Business Owners Policy,active,6200.00,2024-11-01,2025-11-01,500000.00
+PL-2024-88930,ACC-10201,Zurich Insurance,Professional Liability,active,22800.00,2024-06-01,2025-06-01,5000000.00
