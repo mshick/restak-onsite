@@ -37,6 +37,32 @@ const TIER_ORDER: Record<Discrepancy['tier'], number> = {
   cosmetic: 4,
 };
 
+const INCLUDE_BY_TIER: Record<Discrepancy['tier'], 'include' | 'exclude'> = {
+  out_of_distribution: 'include',
+  material: 'include',
+  ambiguous: 'include',
+  auto_resolved: 'exclude',
+  cosmetic: 'exclude',
+};
+
+/**
+ * Ensures every discrepancy leaving the pipeline has the three review-flow
+ * fields populated. Rules-emitted findings already have them set (via
+ * `withReviewDefaults` in rules.ts); LLM-emitted findings carry
+ * `suggested_rationale` but rely on this function to fill in
+ * `final_rationale` and `flag_state`.
+ *
+ * Also guarantees a non-empty `id` as a last-resort safety net.
+ */
+function withDefaults(d: Discrepancy): Discrepancy {
+  return {
+    ...d,
+    id: d.id || crypto.randomUUID(),
+    final_rationale: d.final_rationale ?? d.suggested_rationale,
+    flag_state: d.flag_state ?? INCLUDE_BY_TIER[d.tier],
+  };
+}
+
 export interface ReconcileResult {
   discrepancies: Discrepancy[];
   severity: Discrepancy['tier'] | null;
@@ -48,7 +74,9 @@ export async function reconcile(
 ): Promise<ReconcileResult> {
   const { trivial, residueFields } = runRules(sor, ext);
   const llmFindings = await compareWithLlm(sor, ext, residueFields);
-  const all = [...trivial, ...llmFindings].sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier]);
+  const all = [...trivial, ...llmFindings]
+    .map(withDefaults)
+    .sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier]);
   return {
     discrepancies: all,
     severity: all[0]?.tier ?? null,
