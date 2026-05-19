@@ -66,6 +66,21 @@ interface DiscrepancyBase {
   detail?: string;
   source: 'rules' | 'llm';
   confidence?: number;
+  /**
+   * Carrier-facing one-or-two sentences explaining why we want this item
+   * called out in the follow-up email. The reconcile pipeline populates
+   * this on every finding: LLM-emitted for residue fields and narratives;
+   * templated in `rules.ts` for cosmetic / auto_resolved.
+   */
+  suggested_rationale: string;
+  /** Reviewer-edited rationale. Starts equal to suggested_rationale. */
+  final_rationale: string;
+  /**
+   * Defaults per tier: material / ambiguous / out_of_distribution → 'include';
+   * cosmetic / auto_resolved → 'exclude'. The reviewer can flip it either way
+   * from the detail screen.
+   */
+  flag_state: 'include' | 'exclude';
 }
 
 /**
@@ -109,7 +124,18 @@ export type Discrepancy = FieldDiscrepancy | NarrativeDiscrepancy;
 export interface DecisionLogEntry {
   at: string; // ISO timestamp
   actor: 'reviewer' | 'system';
-  action: 'accept' | 'reject' | 'edit' | 'escalate' | 'auto_resolve' | 'comment';
+  action:
+    | 'accept'              // legacy per-discrepancy approval — unused in v1
+    | 'reject'              // legacy per-discrepancy reject — unused in v1
+    | 'edit'                // legacy generic edit — unused in v1
+    | 'escalate'            // legacy escalate — unused in v1
+    | 'auto_resolve'        // system-emitted on rules pre-pass
+    | 'comment'             // free-text note
+    | 'include_in_email'    // flag flipped on
+    | 'exclude_from_email'  // flag flipped off
+    | 'rationale_edit'      // final_rationale changed
+    | 'generate_email'      // LLM draft produced (or template fallback)
+    | 'submit';             // review finalized, email_markdown saved
   discrepancy_id?: string;
   note?: string;
 }
