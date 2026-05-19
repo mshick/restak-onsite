@@ -311,18 +311,14 @@ const DOCS = [
   },
 
   // -----------------------------------------------------------------------
-  // 3. Summit Ridge WC Audit (AmTrust)
+  // 3. Summit Ridge WC Audit (AmTrust) — INTENTIONALLY OMITTED FROM SEED.
   //
-  // SOR has WC-2024-71004 with premium $41,200 and full contact
-  // "Roberto Alejandro Gutierrez-Medina" + full address. The audit PDF
-  // shows "Estimated Annual Premium $18,240" (significantly lower than
-  // SOR) — a major reconciliation question. Plus low-confidence
-  // truncated extractions on contact_name and mailing_address that the
-  // LLM should mark ambiguous. Rich unparsed sections: classification
-  // breakdown (4 codes including 5645 Carpentry-Residential as
-  // governing class), audit math, EMR 1.12, loss history.
+  // The account + policy are still seeded by supabase/seed.sql so the
+  // upload flow on the queue page has something to match against. Upload
+  // docs/generated_policies/SummitRidge_WC_Audit_2025.pdf from the UI to
+  // recreate this row.
   // -----------------------------------------------------------------------
-  {
+  /* {
     filename: 'SummitRidge_WC_Audit_2025.pdf',
     docType: 'audit',
     policyNumber: 'WC-2024-71004',
@@ -439,7 +435,7 @@ const DOCS = [
         'premium reflects estimated annual only; final premium pending audit',
       ],
     },
-  },
+  }, */
 
   // -----------------------------------------------------------------------
   // 4. Coastal Vet PL Certificate (CNA)

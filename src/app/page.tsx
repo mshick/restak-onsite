@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/server';
 import { CopyEmailButton } from './queue-row-actions';
+import { UploadDocument } from './upload-document';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,6 +145,8 @@ export default async function Home() {
         </div>
         <span className="text-xs text-muted-foreground">single mock user · no auth</span>
       </header>
+
+      <UploadDocument />
 
       {error && (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm">
