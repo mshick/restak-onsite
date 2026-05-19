@@ -23,7 +23,13 @@ export function ReviewShell({
   hasReconciled,
   children,
 }: ReviewShellProps) {
-  const [currentMarkdown, setCurrentMarkdown] = useState(initialMarkdown ?? templatePreview);
+  // EmailPanel notifies us via onMarkdownChange whenever the effective
+  // markdown changes — including server-driven templatePreview updates
+  // after a flag/rationale revalidation. Seed with the current preview so
+  // a submit before any callback still sends something sensible.
+  const [currentMarkdown, setCurrentMarkdown] = useState(
+    initialMarkdown ?? templatePreview,
+  );
 
   return (
     <>
